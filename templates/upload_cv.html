@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CV and Generate MCQs</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f0f0; /* Light gray background */
+            color: #333; /* Dark text color */
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #ffffff; /* White background for forms */
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .form-section {
+            flex: 0 0 45%; /* 45% width for each form */
+        }
+        .form-section h2 {
+            margin-bottom: 20px;
+            color: #333; /* Dark text color */
+        }
+        .form-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .form-section input[type=file],
+        .form-section input[type=text],
+        .form-section input[type=number] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .form-section input[type=submit] {
+            background-color: #007bff; /* Blue submit button */
+            color: #fff; /* White text color */
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        .form-section input[type=submit]:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+        .mcq-list {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 40px; /* Space between forms and MCQ list */
+        }
+        .mcq-list li {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #f1f1f1; /* Light gray background for MCQ items */
+        }
+        .mcq-list h4 {
+            margin-bottom: 10px;
+            color: #333; /* Dark text color */
+        }
+        .back-to-home {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .back-to-home button {
+            background-color: #6c757d; /* Gray button */
+            color: #fff; /* White text color */
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .back-to-home button:hover {
+            background-color: #5a6268; /* Darker gray on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Upload CV Form Section -->
+        <div class="form-section">
+            <h2>Upload CV</h2>
+            <form action="/upload-to-external/" method="post" enctype="multipart/form-data">
+                <label for="file">Select CV File:</label>
+                <input type="file" id="file" name="files" required>
+                <label for="campaign_number">Campaign Number:</label>
+                <input type="text" id="campaign_number" name="campaign_number" required>
+                <input type="submit" class="btn btn-primary" value="Upload">
+            </form>
+        </div>
+
+        <!-- Generate MCQs Form Section -->
+        <div class="form-section">
+            <h2>Generate MCQs</h2>
+            <form action="/generate-mcq/" method="post">
+                <label for="field_of_expertise">Field of Expertise:</label>
+                <input type="text" id="field_of_expertise" name="field_of_expertise" required>
+                <label for="difficulty_level">Difficulty Level (1-5):</label>
+                <input type="number" id="difficulty_level" name="difficulty_level" min="1" max="5" required>
+                <input type="submit" class="btn btn-primary" value="Generate MCQs">
+            </form>
+        </div>
+    </div>
+
+    <!-- Generated MCQs Section -->
+    <div class="container">
+        <h2>Generated MCQs</h2>
+        <ul class="mcq-list">
+            {% if mcq_data %}
+                {% for question_data in mcq_data %}
+                <li>
+                    <h4>{{ question_data.question }}</h4>
+                    <form>
+                        {% for option in question_data.options %}
+                        <div>
+                            <input type="radio" id="option{{ loop.index }}" name="question{{ loop.index0 }}" value="{{ loop.index0 }}">
+                            <label for="option{{ loop.index }}">{{ option }}</label>
+                        </div>
+                        {% endfor %}
+                    </form>
+                </li>
+                {% endfor %}
+            {% else %}
+                <li>No MCQs generated yet.</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <!-- Back to Main Menu Button -->
+    <div class="back-to-home">
+        <button onclick="window.location.href='/'" class="btn btn-secondary">Back to Main Menu</button>
+    </div>
+
+    <!-- Bootstrap JS and dependencies (optional) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

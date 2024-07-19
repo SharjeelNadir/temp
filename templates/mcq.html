@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate MCQs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background: url('/static/images/checkdb image.jpg') no-repeat center center fixed;
+            background-color: black;
+            color: white;
+            height: auto;
+            margin: 0;
+            overflow: auto;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            overflow: auto;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            background-color: rgba(0, 255, 229, 0.494);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: rgba(8, 255, 230, 0.725);
+        }
+        .mcqs {
+            display: none;
+        }
+        .mcq {
+            margin-bottom: 20px;
+        }
+        .options {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generate MCQs</h1>
+        <form id="expertiseForm">
+            <div class="form-group">
+                <label for="field">Field of Expertise</label>
+                <input type="text" id="field" name="field" required>
+            </div>
+            <div class="form-group">
+                <label for="level">Level</label>
+                <select id="level" name="level" required>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+            <button type="submit">Generate</button>
+        </form>
+
+        <div class="mcqs" id="mcqs">
+            <!-- MCQs will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('expertiseForm').onsubmit = function(event) {
+            event.preventDefault();
+            const field = document.getElementById('field').value;
+            const level = document.getElementById('level').value;
+
+            // For demonstration purposes, we will use static MCQs.
+            // In a real application, you would fetch these from the server based on the field and level.
+            const mcqs = [
+                {
+                    question: "What is the capital of France?",
+                    options: ["Paris", "London", "Rome", "Berlin"]
+                },
+                {
+                    question: "What is the largest planet in our solar system?",
+                    options: ["Earth", "Mars", "Jupiter", "Saturn"]
+                },
+                {
+                    question: "Who wrote 'Hamlet'?",
+                    options: ["William Shakespeare", "Charles Dickens", "J.K. Rowling", "Mark Twain"]
+                },
+                {
+                    question: "What is the chemical symbol for water?",
+                    options: ["O2", "H2O", "CO2", "H2"]
+                },
+                {
+                    question: "Who painted the Mona Lisa?",
+                    options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Claude Monet"]
+                }
+            ];
+
+            // Display MCQs
+            const mcqsContainer = document.getElementById('mcqs');
+            mcqsContainer.innerHTML = ''; // Clear previous MCQs
+            mcqs.forEach((mcq, index) => {
+                const mcqElement = document.createElement('div');
+                mcqElement.className = 'mcq';
+                mcqElement.innerHTML = `
+                    <h2>Question ${index + 1}: ${mcq.question}</h2>
+                    ${mcq.options.map(option => `
+                        <div class="options">
+                            <label>
+                                <input type="radio" name="q${index + 1}" value="${option}">
+                                ${option}
+                            </label>
+                        </div>
+                    `).join('')}
+                `;
+                mcqsContainer.appendChild(mcqElement);
+            });
+
+            // Add submit button for MCQs
+            const submitButton = document.createElement('button');
+            submitButton.innerText = 'Submit';
+            submitButton.type = 'submit';
+            mcqsContainer.appendChild(submitButton);
+
+            // Display the MCQs container
+            mcqsContainer.style.display = 'block';
+        };
+
+        document.getElementById('mcqs').onsubmit = function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            fetch('/submit-quiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Quiz submitted successfully');
+                // Optionally reload the page or navigate to another page
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to submit quiz');
+            });
+        }
+    </script>
+</body>
+</html>

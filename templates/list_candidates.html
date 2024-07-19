@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate List</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: url('/static/images/top-view-agendas-succlent-plant.jpg') no-repeat center center fixed;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding-top: 120px; /* Adjust for the fixed navbar */
+            background-size: cover;
+            background-position: center;
+        }
+        .navbar-custom {
+            height: 60px; /* Reduce the height of the navbar */
+            background-color: rgba(0, 0, 0, 0.281);
+            border-bottom: 2px solid #1abc9c9f;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000; /* Ensure navbar is on top */
+        }
+        .navbar-brand {
+            color: white;
+            font-size: 24px;
+            padding: 10px 20px;
+            transition: color 0.3s;
+            line-height: 40px; /* Adjust line height to vertically center the text */
+        }
+        .navbar-nav {
+            margin-left: auto; /* Align nav items to the right */
+        }
+        .nav-item {
+            padding: 10px 15px;
+        }
+        .nav-link {
+            color: white !important;
+            font-size: 18px;
+            transition: color 0.3s;
+            line-height: 40px; /* Align nav links vertically */
+        }
+        .nav-link:hover {
+            color: #1ccdaa !important;
+        }
+        .nav-item.active .nav-link {
+            color: #1ccdaa !important;
+            font-weight: bold;
+        }
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 1200px;
+            margin: 80px auto 20px; /* Add margin to the top */
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+            min-width: 400px;
+        }
+        table th, table td {
+            padding: 12px 15px;
+            border: 1px solid #dddddd;
+            text-align: left;
+        }
+        table th {
+            background-color: #3333334e;
+            color: white;
+        }
+        button {
+            background-color: #1abc9cbb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #1ccdaa;
+        }
+        .filter {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .filter input[type="number"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+            width: 150px;
+        }
+        .candidate-img {
+            max-width: 100px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <a class="navbar-brand" href="#">CV Portal</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/upload-cv">Upload CV</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/list-candidates">Check Database</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/set-score">Set Scoring Rules</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/get-scores">View Scores</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Candidate List</h1>
+        
+        <!-- Filter Options -->
+        <div class="filter">
+            <input type="number" id="campaignNumber" placeholder="Enter campaign number">
+            <button onclick="filterByCampaign()">Filter</button>
+            <button onclick="sortBy('asc')">Sort Ascending</button>
+            <button onclick="sortBy('desc')">Sort Descending</button>
+        </div>
+        
+        <!-- Candidate List -->
+        {% if candidates %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Campaign Number</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="candidateList">
+                {% for candidate in candidates %}
+                <tr>
+                    <td>{{ candidate.name }}</td>
+                    <td>{{ candidate.campaign_number }}</td>
+                    <td><button onclick="viewCandidate('{{ candidate.id }}', '{{ candidate.campaign_number }}')">View</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No Candidates Available.</p>
+        {% endif %}
+        
+        <!-- Back Button -->
+        <button onclick="window.location.href='/'">Back</button>
+    </div>
+    
+    <script>
+        function filterByCampaign() {
+            const campaignNumber = document.getElementById('campaignNumber').value;
+            if (campaignNumber.trim() !== "") {
+                window.location.href = `/list-candidates?campaign_number=${campaignNumber}`;
+            }
+        }
+        
+        function sortBy(order) {
+            window.location.href = `/list-candidates?sort=${order}`;
+        }
+        
+        function viewCandidate(candidateId, campaignNumber) {
+            window.location.href = `/check-database?candidate_id=${candidateId}&campaign_number=${campaignNumber}`;
+        }
+    </script>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
