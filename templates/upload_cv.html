@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CV</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212; /* Dark background for a sleek look */
+            color: #e0e0e0; /* Light gray text for better readability */
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            height: 100vh;
+            position: relative;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #1e1e1e; /* Darker background for forms */
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        .form-section h2 {
+            margin-bottom: 20px;
+            color: #ffffff; /* White text color */
+        }
+        .form-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .form-section input[type=file],
+        .form-section select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+            background-color: #2c2c2c; /* Darker background for inputs */
+            color: #e0e0e0; /* Light text color for inputs */
+        }
+        .form-section input[type=submit] {
+            background-color: #1abc9c; /* Soft green button */
+            color: #fff; /* White text color */
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-bottom: 30px; /* Increased distance between buttons */
+        }
+        .form-section input[type=submit]:hover {
+            background-color: #17a89e; /* Slightly darker green on hover */
+        }
+        .back-to-home button {
+            background-color: #333; /* Dark button for less contrast */
+            color: #e0e0e0; /* Light text color */
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 20px; /* Increased space above the button */
+        }
+        .back-to-home button:hover {
+            background-color: #555; /* Slightly lighter gray on hover */
+        }
+        .navbar-custom {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-bottom: 2px solid #1abc9cb8;
+        }
+        .nav-link {
+            color: #e0e0e0 !important;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+        .nav-link:hover {
+            color: #1abc9c !important;
+        }
+        .nav-item.active .nav-link {
+            color: #1abc9c !important;
+            font-weight: bold;
+        }
+    </style>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <a class="navbar-brand" href="#">CV Portal</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/upload-cv">Upload CV</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/list-candidates">Check Database</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/set-score">Set Scoring Rules</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/get-scores">View Scores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/jobdescription">Insert Job Description</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Upload CV Form Section -->
+        <div class="form-section">
+            <h2>Upload CV</h2>
+            <form action="/upload-to-external/" method="post" enctype="multipart/form-data" id="uploadForm">
+                <label for="file">Select CV File:</label>
+                <input type="file" id="file" name="files" required>
+                
+                <label for="campaign_number">Campaign Number:</label>
+                <select id="campaign_number" name="campaign_number" required>
+                    <!-- Options will be dynamically populated here -->
+                </select>
+                
+                <input type="submit" class="btn btn-primary" value="Upload">
+            </form>
+        </div>
+
+        <!-- Back to Main Menu Button -->
+        <div class="back-to-home">
+            <button onclick="window.location.href='/'" class="btn btn-secondary">Back to Main Menu</button>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Fetch campaign numbers and populate dropdown
+            fetch('/get-campaign-numbers')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('campaign_number');
+                    select.innerHTML = '<option value="" disabled selected>Select a campaign number</option>';
+                    data.forEach(campaign => {
+                        const option = document.createElement('option');
+                        option.value = campaign.campaign_number;
+                        option.textContent = campaign.campaign_number;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching campaign numbers:', error));
+
+            // Prevent form submission if campaign number is not in dropdown
+            document.getElementById('uploadForm').addEventListener('submit', function(event) {
+                const selectedCampaignNumber = document.getElementById('campaign_number').value;
+                const validOptions = Array.from(document.getElementById('campaign_number').options).map(option => option.value);
+
+                if (!validOptions.includes(selectedCampaignNumber)) {
+                    event.preventDefault();
+                    alert('Please select a valid campaign number from the dropdown.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

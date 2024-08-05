@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insert Job Description</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            color: white;
+            background-color: #0b0b0b;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        .navbar-custom {
+            background-color: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #1abc9c;
+        }
+        .nav-link {
+            color: white !important;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+        .nav-link:hover {
+            color: #1ccdaa !important;
+        }
+        .nav-item.active .nav-link {
+            color: #1ccdaa !important;
+            font-weight: bold;
+        }
+        .container {
+            margin-top: 30px;
+            padding: 30px;
+            background-color: #1c1c1c;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            color: #1ccdaa;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #cccccc;
+        }
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #333333;
+            color: white;
+        }
+        input::placeholder,
+        textarea::placeholder {
+            color: #aaaaaa;
+        }
+        button {
+            background-color: #1ccdaa;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #1ba09d;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+        }
+        textarea {
+            flex: 1;
+        }
+        .btn-sm {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <a class="navbar-brand" href="#">CV Portal</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/upload-cv">Upload CV</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/list-candidates">Check Database</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/set-score">Set Scoring Rules</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/get-scores">View Scores</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/insert-job-description">Insert Job Description</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Insert Job Description</h1>
+        <form id="jobDescriptionForm" method="post" action="/insert-job-description">
+            <div class="form-group">
+                <label for="jobTitle">Job Title</label>
+                <input type="text" id="jobTitle" name="jobTitle" placeholder="Enter job title" required>
+            </div>
+            <div class="form-group">
+                <label for="jobDescription">Job Description</label>
+                <div class="input-group">
+                    <textarea id="jobDescription" name="jobDescription" rows="5" placeholder="Enter job description" required></textarea>
+                    <button type="button" class="btn btn-secondary btn-sm" id="descriptionHelpButton">Help</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="campaignNumber">Campaign Number</label>
+                <input type="text" id="campaignNumber" name="campaignNumber" placeholder="Enter campaign number" required>
+            </div>
+            <div class="form-group">
+                <label for="expirationDate">Expiration Date For Campaign Number</label>
+                <input type="date" id="expirationDate" name="expiration_date" required>
+            </div>
+            <div class="form-group">
+                <label for="tags">Tags</label>
+                <input type="text" id="tags" name="tags" placeholder="Enter tags (comma-separated)" required>
+            </div>
+            <div class="form-group">
+                <label for="experience">Experience Required (Years)</label>
+                <input type="number" id="experience" name="experience" placeholder="Enter experience in years" required>
+            </div>
+            <div class="form-group">
+                <label for="psychology">Psychology</label>
+                <select id="psychology" name="psychology" required>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+            <input type="hidden" id="status" name="status" value="Ongoing">
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        document.getElementById('descriptionHelpButton').addEventListener('click', async function() {
+            const jobTitle = document.getElementById('jobTitle').value;
+            if (!jobTitle) {
+                alert('Please enter a job title first.');
+                return;
+            }
+
+            const response = await fetch(`/get-job-description?jobTitle=${encodeURIComponent(jobTitle)}`);
+            const data = await response.json();
+
+            if (data.description) {
+                document.getElementById('jobDescription').value = data.description;
+            } else {
+                alert('No description found for this job title.');
+            }
+        });
+
+        // Initialize Bootstrap tooltips
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+</body>
+
+</html>
