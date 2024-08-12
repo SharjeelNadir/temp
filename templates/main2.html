@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CV or Check Database</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            color: white;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+        .container {
+            text-align: center;
+            background-color: rgba(52, 73, 94, 0);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        .navbar-custom {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-bottom: 2px solid #1abc9c51;
+            z-index: 10;
+        }
+        .nav-link {
+            color: white !important;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+        .nav-link:hover {
+            color: #1ccdaa !important;
+        }
+        .nav-item.active .nav-link {
+            color: #1ccdaa !important;
+            font-weight: bold;
+        }
+        .btn-logout {
+            margin-left: 20px;
+            color: #1ccdaa !important;
+            border: 1px solid #1ccdaa;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .btn-logout:hover {
+            background-color: #1ccdaa;
+            color: white !important;
+        }
+    </style>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <video autoplay muted loop>
+        <source src="/static/videos/background.mp4" type="video/mp4">
+    </video>
+    <div class="overlay"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <a class="navbar-brand" href="#">CV Portal</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/list-candidates">Check Database</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/set-score">Set Scoring Rules</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/get-scores">View Scores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/jobdescription">Insert Job Description</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-outline-info btn-logout" href="/logout">Log Out</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Welcome to the CV Portal</h1>
+        <p id="typing-text"></p>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Typing animation script -->
+    <script>
+        const text = "An Innovative Solution To Your Modern Problem.";
+        let index = 0;
+        let typingInterval;
+
+        function startTyping() {
+            typingInterval = setInterval(typeWriter, 70);
+        }
+
+        function typeWriter() {
+            if (index < text.length) {
+                document.getElementById("typing-text").textContent = text.substring(0, index + 1);
+                index++;
+            } else {
+                clearInterval(typingInterval);
+                index = 0;
+                setTimeout(startTyping, 1500);
+            }
+        }
+
+        startTyping();
+    </script>
+</body>
+</html>

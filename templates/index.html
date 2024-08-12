@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CV or Check Database</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            color: white;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+        .container {
+            text-align: center;
+            background-color: rgba(52, 73, 94, 0);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .welcome-container {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+        .job-descriptions-container {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120%;
+            max-height: 50%;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            z-index: 2;
+        }
+        .job-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            color: white;
+        }
+        .job-card h2 {
+            margin-top: 0;
+        }
+        .navbar-custom {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-bottom: 2px solid #1abc9c51;
+            z-index: 10;
+        }
+        .nav-link {
+            color: white !important;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+        .nav-link:hover {
+            color: #1ccdaa !important;
+        }
+        .nav-item.active .nav-link {
+            color: #1ccdaa !important;
+            font-weight: bold;
+        }
+        .modal-content {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 10px;
+        }
+        .modal-header {
+            border-bottom: 1px solid #1abc9c51;
+        }
+        .modal-title {
+            color: #1ccdaa;
+        }
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: #1ccdaa;
+            box-shadow: none;
+        }
+        .btn-primary {
+            background-color: #1ccdaa;
+            border-color: #1ccdaa;
+        }
+        .btn-primary:hover {
+            background-color: #1abc9c;
+            border-color: #1abc9c;
+        }
+        .modal-footer {
+            border-top: 1px solid #1abc9c51;
+        }
+        .btn-upload-cv {
+            background-color: #1ccdaa;
+            border-color: #1ccdaa;
+            color: white;
+            margin-top: 10px;
+        }
+        .btn-upload-cv:hover {
+            background-color: #1abc9c;
+            border-color: #1abc9c;
+        }
+        .job-descriptions-container::-webkit-scrollbar {
+    width: 10px;
+}
+
+.job-descriptions-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.6); /* Track color */
+}
+
+.job-descriptions-container::-webkit-scrollbar-thumb {
+    background: rgba(246, 246, 246, 0.259); /* Scrollbar color */
+    border-radius: 10px;
+}
+
+.job-descriptions-container::-webkit-scrollbar-thumb:hover {
+    background: rgb(111, 111, 111); /* Scrollbar color on hover */
+}
+    </style>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <video autoplay muted loop>
+        <source src="/static/videos/background.mp4" type="video/mp4">
+    </video>
+    <div class="overlay"></div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <a class="navbar-brand" href="#">CV Portal</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-toggle="modal" data-target="#loginModal">Login</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="loginModalLabel">Login</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container welcome-container">
+        <h1>Welcome to the Job Portal</h1>
+        <p id="typing-text"></p>
+    </div>
+    
+    <div class="container job-descriptions-container" id="job-descriptions">
+        <!-- Job descriptions will be dynamically inserted here -->
+    </div>
+    
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Typing animation script -->
+    <script>
+        const text = "Upload Your CV And Sit Back And Relax";
+        let index = 0;
+        let typingInterval;
+
+        function startTyping() {
+            typingInterval = setInterval(typeWriter, 70);
+        }
+
+        function typeWriter() {
+            if (index < text.length) {
+                document.getElementById("typing-text").textContent = text.substring(0, index + 1);
+                index++;
+            } else {
+                clearInterval(typingInterval);
+                index = 0;
+                setTimeout(startTyping, 1500);
+            }
+        }
+
+        startTyping();
+
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.redirect) {
+                    window.location.href = result.redirect; // Redirect to /main2
+                } else {
+                    alert('Login failed. Please check your username and password.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+
+        // Example job descriptions (replace with dynamic content)
+        async function fetchJobDescriptions() {
+        try {
+            const response = await fetch('/job-descriptions');
+            const jobDescriptions = await response.json();
+
+            const jobDescriptionsContainer = document.getElementById('job-descriptions');
+            
+            jobDescriptions.forEach(job => {
+                const jobDiv = document.createElement('div');
+                jobDiv.classList.add('job-card', 'mb-4');
+
+                jobDiv.innerHTML = `
+                    <h2>Job Title : ${job.job_title}</h2>
+                     
+                    <p><strong>Experience Required:</strong> ${job.experience} years</p>
+                    <button class="btn btn-upload-cv" data-campaign="${job.campaign_number}">Upload CV</button>
+                `;
+
+                jobDescriptionsContainer.appendChild(jobDiv);
+            });
+
+            // Add event listeners to all upload CV buttons
+            document.querySelectorAll('.btn-upload-cv').forEach(button => {
+                button.addEventListener('click', () => {
+                    const campaignNumber = button.getAttribute('data-campaign');
+                    window.location.href = `/upload-cv?campaign_number=${campaignNumber}`;
+                });
+            });
+        } catch (error) {
+            console.error('Error fetching job descriptions:', error);
+        }
+    }
+    fetchJobDescriptions();
+    </script>
+</body>
+</html>
