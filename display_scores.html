@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate List</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            padding-top: 60px; /* Adjust for the fixed navbar */
+        }
+        .navbar-custom {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-bottom: 2px solid #1abc9c51;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+        .navbar-nav {
+            margin-left: auto;
+        }
+        .navbar-brand {
+            color: white;
+            font-size: 18px;
+            padding: 0 15px;
+            transition: color 0.3s;
+            line-height: 60px;
+        }
+        .nav-item {
+            margin: 0;
+        }
+        .nav-link {
+            color: white !important;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+        .nav-link:hover {
+            color: #1ccdaa !important;
+        }
+        .nav-item.active .nav-link {
+            color: #1ccdaa !important;
+            font-weight: bold;
+        }
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 36px;
+            color: #5fe0d1;
+            animation: fadeIn 1s ease-out;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+            min-width: 400px;
+        }
+        table th, table td {
+            padding: 12px 15px;
+            border: 1px solid #333;
+            text-align: left;
+        }
+        table th {
+            background-color: #1e1e1e;
+            color: #fbfbfb;
+        }
+        table td {
+            background-color: #1e1e1e;
+        }
+        button, .btn-primary {
+            background-color: rgba(0, 255, 229, 0.619);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        button:hover, .btn-primary:hover {
+            background-color: rgba(8, 255, 230, 0.951);
+            transform: scale(1.05);
+        }
+        .back-button {
+            background-color: rgba(0, 255, 229, 0.494);
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .back-button:hover {
+            background-color: rgba(8, 255, 230, 0.725);
+            transform: scale(1.1);
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Dropdown styles */
+        select.form-control {
+            background-color: #121212; /* Black background */
+            color: #e0e0e0; /* Light text color */
+            border: 1px solid #333; /* Border color */
+            border-radius: 5px; /* Rounded corners */
+            padding: 10px; /* Padding inside the dropdown */
+        }
+        select.form-control option {
+            background-color: #121212; /* Black background for options */
+            color: #e0e0e0; /* Light text color for options */
+        }
+        select.form-control:focus {
+            border-color: #1ccdaa; /* Border color on focus */
+            outline: none; /* Remove the default focus outline */
+        }
+        /* Note styles */
+        .note {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <a class="navbar-brand" href="#">CV Portal</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/main2">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/list-candidates">Check Database</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/set-score">Set Scoring Rules</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/get-scores">View Scores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/jobdescription">Insert Job Description</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Candidate List</h1>
+
+        <!-- Campaign Dropdown Form -->
+        <form method="GET" action="/get-scores" id="campaignForm">
+            <div class="form-group">
+                <label for="campaignNumber">Select Campaign Number:</label>
+                <select id="campaignNumber" name="campaign_number" class="form-control" onchange="submitForm()">
+                    {% for campaign in campaign_numbers %}
+                    <option value="{{ campaign }}" {% if campaign == selected_campaign_number %}selected{% endif %}>
+                        {{ campaign }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+        
+        <!-- Sorting Buttons -->
+        <div>
+            <button onclick="sortCandidates('asc')">Sort Ascending</button>
+            <button onclick="sortCandidates('desc')">Sort Descending</button>
+        </div>
+        
+        <!-- Candidate List -->
+        {% if candidates %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>View Score's</th>
+                    <th>View Resume</th>
+                </tr>
+            </thead>
+            <tbody id="candidateList">
+                {% for candidate in candidates %}
+                <tr>
+                    <td>{{ candidate.name }}</td>
+                    <td>
+                        <button onclick="viewCandidate({{ candidate.id }})">View</button>
+                    </td>
+                    <td>
+                        {% if candidate.file_name %}
+                            <button onclick="viewResume('{{ candidate.file_name }}')">View Resume</button>
+                        {% else %}
+                            <button disabled>No Resume</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No Candidates Available.</p>
+        {% endif %}
+        
+        <!-- Back Button -->
+        <button class="back-button" onclick="window.location.href='/main2'">Back</button>
+        
+        <!-- Note -->
+        <div class="note">
+            Ranking is conducted on the basis of quiz conducted.
+        </div>
+
+        <script>
+            function submitForm() {
+                document.getElementById('campaignForm').submit();
+            }
+
+            function sortCandidates(order) {
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('sort', order);
+                window.location.search = urlParams.toString();
+            }
+        
+            function viewCandidate(candidateId) {
+                window.location.href = `/view-candidate/${candidateId}`;
+            }
+        
+            function viewResume(fileName) {
+                window.open(`/view-resume/${fileName}`, '_blank');
+            }
+        </script>
+
+        <!-- Bootstrap JS and dependencies -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    </div>
+</body>
+</html>

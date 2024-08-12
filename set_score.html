@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Scoring Rules</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <style>
+        body {
+            background: url('/static/images/marking.jpg') no-repeat center center fixed;
+            background-color: black;
+            background-size: cover;
+            background-position: center;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding-top: 70px; /* Adjust this value as needed */
+            color: rgb(0, 0, 0);
+        }
+        h2 {
+            font-size: 36px;
+            font-weight: bold;
+            color: rgb(255, 255, 255);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            color: rgb(255, 255, 255);
+            font-weight: bold; /* Make all labels bold */
+        }
+        input[type="text"], input[type="number"], .form-control {
+            padding: 10px;
+            color: black; /* Ensure text inside input is black */
+        }
+        input[type="submit"] {
+            background-color: rgba(0, 255, 229, 0.619);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type="submit"]:hover {
+            background-color: rgba(8, 255, 230, 0.951);
+        }
+        .back-button {
+            background-color: rgba(0, 255, 229, 0.494);
+            color: rgb(255, 255, 255);
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            width: auto;
+            font-size: auto;
+            border-radius: 4px;
+        }
+        .back-button:hover {
+            background-color: rgba(8, 255, 230, 0.725);
+        }
+        /* Animation */
+        .container {
+            opacity: 0;
+            animation: fadeIn 1s forwards;
+        }
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+        /* Styling for Navbar */
+    
+        .navbar-custom {
+    background-color: rgba(0, 0, 0, 0.7);
+    border-bottom: 2px solid #1abc9c51;
+    position: fixed; /* Keep the navbar fixed at the top */
+    width: 100%; /* Ensure it spans the full width */
+    top: 0; /* Align to the top of the viewport */
+    left: 0; /* Align to the left of the viewport */
+    z-index: 10; /* Ensure it's on top of other content */
+}
+
+.nav-link {
+    color: white !important;
+    font-size: 17.8px;
+    transition: color 0.3s;
+}
+
+.nav-link:hover {
+    color: #1ccdaa !important;
+}
+
+.nav-item.active .nav-link {
+    color: #1ccdaa !important;
+    font-weight: bold;
+}
+
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <a class="navbar-brand" href="#">CV Portal</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/main2">Home</a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="/list-candidates">Check Database</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="/set-score">Set Scoring Rules</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/get-scores">View Scores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/jobdescription">Insert Job Description</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="mb-4">Set Scoring Rules</h2>
+        <form action="/apply-scoring/" method="post">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="score">Score:</label>
+                    <input type="number" id="score" name="score" class="form-control" min="1" max="100" required placeholder="e.g., 80">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="experience_years">Experience Years:</label>
+                    <input type="number" id="experience_years" name="experience_years" class="form-control" min="1" max="50" placeholder="e.g., 5">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="skills">Skills:</label>
+                    <input type="text" id="skills" name="skills" class="form-control" list="skillList" autocomplete="off" placeholder="e.g., Python, SQL">
+                    <datalist id="skillList">
+                        {% for skill in skills %}
+                        <option value="{{ skill }}">{{ skill }}</option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="education_type">Education Type:</label>
+                    <input type="text" id="education_type" name="education_type" class="form-control" placeholder="e.g., Bachelor's">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="certification">Certification:</label>
+                    <input type="text" id="certification" name="certification" class="form-control" placeholder="e.g., PMP">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="research_years">Research Title:</label>
+                    <input type="text" id="research_years" name="research_years" class="form-control" placeholder="e.g., Machine Learning">
+                </div>
+                <div class="form-group col-md-12">
+                    <label for="campaign_number">Campaign Number:</label>
+                    <input type="number" id="campaign_number" name="campaign_number" class="form-control" min="1" max="10000" required placeholder="e.g., 2023">
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Submit" class="btn btn-primary">
+            </div>
+        </form>
+        <button class="back-button mb-5" onclick="window.location.href='/main2'">Back</button>
+    </div>
+
+    <!-- Bootstrap JS and dependencies (for optional usage) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
+</body>
+</html>
