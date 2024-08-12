@@ -23,7 +23,13 @@ from typing import List, Dict
 import json
 import re
 import time
+from openai import OpenAI
 
+# Create an OpenAI client with your deepinfra token and endpoint
+openai = OpenAI(
+    api_key="AE9VIj24fqOGtIBjgUtWSzXKrclA2n9q",
+    base_url="https://api.deepinfra.com/v1/openai",
+)
 
 
 app = FastAPI()
@@ -148,6 +154,7 @@ async def upload_to_external(files: List[UploadFile] = File(...), campaign_numbe
     global stored_json_data, uploaded_campaign_number
     uploaded_campaign_number = campaign_number
     # stored_json_data = []  # Reset the stored JSON data for each new upload
+    print("Campaign number :",uploaded_campaign_number)
     stored_json_data=None
     global file_name
     for file in files:
@@ -207,6 +214,8 @@ async def upload_to_external(files: List[UploadFile] = File(...), campaign_numbe
 @app.get("/store_to_database")
 def store():
     global stored_json_data, file_name, current_candidate_id
+    cursor = None
+    db_connection = None
     
     if not stored_json_data:
         return {"message": "No JSON data available"}
@@ -220,7 +229,6 @@ def store():
         # Parse JSON data
         data = json.loads(json_data)
         
-
         # Print the parsed data for debugging
         print("Parsed JSON data:", data)
         
@@ -265,7 +273,7 @@ def store():
                 cursor.execute(insert_candidate_query, candidate_data)
                 candidate_id = cursor.lastrowid
                 current_candidate_id = candidate_id
-
+                print("Candidate ID :",current_candidate_id)
             # Function to parse and convert dates
             def parse_and_convert_date(date_str):
                 if isinstance(date_str, int):
@@ -343,11 +351,8 @@ def store():
                 research_data = (candidate_id, research_item)
                 cursor.execute(insert_research_query, research_data)
 
-            # Commit changes and close cursor and connection
+            # Commit changes
             db_connection.commit()
-            cursor.close()
-            db_connection.close()
-
             return {"message": "Data saved to database successfully"}
 
         except mysql.connector.Error as e:
@@ -363,18 +368,98 @@ def store():
         return {"error": "No JSON data found in the stored data"}
     except json.JSONDecodeError as e:
         return {"error": "Failed to parse stored JSON data: " + str(e)}
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if db_connection is not None:
+            db_connection.close()
 
 
+@app.post("/login")
+async def login(username: str = Form(...), password: str = Form(...)):
+    global user, passcode
+    connection = connect_to_database()
+    cursor = connection.cursor(dictionary=True)
+    print("-" * 50)
+    print(username)
+    print(password)
+
+    query = "SELECT * FROM login WHERE username = %s AND password = %s"
+    cursor.execute(query, (username, password))
+
+    user = cursor.fetchone()
+    cursor.fetchall()  # Consume any remaining results if necessary
+
+    cursor.close()
+    connection.close()
+
+    if user:
+        user = username
+        passcode = password
+        print(user)
+        print(passcode)
+        return {"redirect": "/main2"}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
 
 
+@app.get("/logout")
+async def logout(request: Request):
+    global user, passcode
+    user = None
+    passcode = None
+    return RedirectResponse(url="/")
+
+@app.get("/main2", response_class=HTMLResponse)
+async def main2(request: Request):
+    return templates.TemplateResponse("main2.html", {"request": request})
+    
 
 
+class JobDescription(BaseModel):
+    job_title: str
+    job_description: str
+    experience: int
 
+@app.get("/job-descriptions")
+async def get_job_descriptions():
+    connection = connect_to_database()
+    cursor = connection.cursor(dictionary=True)
 
+    query = "SELECT job_title, job_description, experience,campaign_number FROM job_descriptions"
+    cursor.execute(query)
+    job_descriptions = cursor.fetchall()
 
+    cursor.close()
+    connection.close()
 
+    return job_descriptions
 
-
+@app.get("/jobforcamp")
+def description_for_upload_cv(campaign_number):
+    # Connect to the database
+    db_connection = connect_to_database()
+    cursor = db_connection.cursor(dictionary=True)
+    
+    try:
+        # Define the SQL query to fetch job descriptions based on campaign_number
+        query = """
+        SELECT id, job_title, job_description, campaign_number, tags, experience
+        FROM job_descriptions
+        WHERE campaign_number = %s
+        """
+        cursor.execute(query, (campaign_number,))
+        results = cursor.fetchall()
+        
+        # If no results, handle accordingly
+        if not results:
+            return {"error": "No job descriptions found for this campaign number"}
+        
+        return results
+    finally:
+        # Clean up
+        cursor.close()
+        db_connection.close()
 
 
 
@@ -589,29 +674,69 @@ def calculate_all_scores():
             cursor.close()
             db_connection.close()
 
+
+
+
+def get_logged_in_user_campaign_numbers(request: Request):
+    global user, passcode
+    db_connection = connect_to_database()
+    cursor = db_connection.cursor()
+    cursor.execute("SELECT campaign_number FROM login WHERE username = %s AND password = %s", (user, passcode))
+    results = cursor.fetchall()
+    db_connection.close()
+    if results:
+        return [row[0] for row in results]
+    return []
+
 @app.get("/get-scores", response_class=HTMLResponse)
-async def list_score(request: Request, campaign_number: int = None, sort: str = None):
+async def list_score(request: Request, campaign_number: int = None, sort: str = "asc"):
     try:
         calculate_all_scores()
         db_connection = connect_to_database()
         cursor = db_connection.cursor(dictionary=True)
+        
+        # Get all campaign numbers for the logged-in user
+        campaign_numbers = get_logged_in_user_campaign_numbers(request)
+
+        # Default to the first campaign number if none is provided
+        if campaign_number is None and campaign_numbers:
+            campaign_number = campaign_numbers[0]
+
+        # Base query for retrieving scores
+        query = """
+            SELECT c.id, c.name, u.mcq_score, u.total_mcq, u.llm_score, u.manual_score, c.file_name
+            FROM candidates c
+            JOIN user_scores u ON c.id = u.candidate_id
+        """
+        
+        # Filter by campaign number if provided
         if campaign_number:
-            cursor.execute("SELECT id, name, candidate_score FROM candidates WHERE campaign_number = %s", (campaign_number,))
+            query += " WHERE c.campaign_number = %s"
+        
+        # Sorting based on mcq_score
+        if sort == "desc":
+            query += " ORDER BY u.mcq_score DESC"
         else:
-            cursor.execute("SELECT id, name, candidate_score FROM candidates")
+            query += " ORDER BY u.mcq_score ASC"
+        
+        # Execute the query
+        if campaign_number:
+            cursor.execute(query, (campaign_number,))
+        else:
+            cursor.execute(query)
+        
         candidates = cursor.fetchall()
         db_connection.close()
+        
         return templates.TemplateResponse("display_scores.html", {
             "request": request,
-            "candidates": candidates
+            "candidates": candidates,
+            "campaign_numbers": campaign_numbers,  # Pass campaign numbers to the template
+            "selected_campaign_number": campaign_number,
+            "sort": sort
         })
     except mysql.connector.Error as e:
         raise HTTPException(status_code=500, detail=f"MySQL Error: {str(e)}")
-
-
-
-
-
 
 
 @app.get("/view-candidate/{candidate_id}", response_class=HTMLResponse)
@@ -621,7 +746,7 @@ async def view_candidate(request: Request, candidate_id: int):
         cursor = db_connection.cursor(dictionary=True)
         
         # Fetch candidate details
-        cursor.execute("SELECT id, name, candidate_score, campaign_number FROM candidates WHERE id = %s", (candidate_id,))
+        cursor.execute("SELECT id, name, candidate_score FROM candidates WHERE id = %s", (candidate_id,))
         candidate = cursor.fetchone()
         
         # Check if candidate exists
@@ -629,36 +754,32 @@ async def view_candidate(request: Request, candidate_id: int):
             db_connection.close()
             raise HTTPException(status_code=404, detail="Candidate not found")
         
-        # Calculate MCQ statistics
+        # Fetch MCQ statistics from user_scores
         cursor.execute("""
-            SELECT COUNT(*) AS total_mcqs, 
-                   SUM(correct_or_not) AS correct_mcqs
-            FROM candidate_questions
+            SELECT mcq_score, total_mcq, llm_score
+            FROM user_scores
             WHERE candidate_id = %s
         """, (candidate_id,))
-        mcq_stats = cursor.fetchone()
+        user_scores = cursor.fetchone()
         
-        total_mcqs = mcq_stats['total_mcqs']
-        correct_mcqs = mcq_stats['correct_mcqs']
-        score_percentage = (correct_mcqs / total_mcqs) * 100 if total_mcqs > 0 else 0
-
-        # Fetch LLM score
-        try:
-            payload = f"{candidate} This is a candidate selected for post of {post} and {description}. Just rate them out of 10 and don't tell nothing else just a single line answer in format x/10"
-            response = requests.post(EXTERNAL_API_URL_CHAT_BOT, data={"text": payload})
-            response.raise_for_status()
-            llm_score = response.text.strip()
-        except requests.exceptions.RequestException as e:
-            print(f"Request failed: {e}")
-            llm_score = "Error fetching score"
+        if user_scores:
+            mcq_score = user_scores['mcq_score']
+            total_mcqs = user_scores['total_mcq']
+            llm_score = user_scores['llm_score']
+            score_percentage = (mcq_score / total_mcqs) * 100 if total_mcqs > 0 else 0
+        else:
+            mcq_score = 0
+            total_mcqs = 0
+            score_percentage = 0
+            llm_score = "N/A"  # Default value if no score is found
         
         db_connection.close()
         
         return templates.TemplateResponse("view_candidate.html", {
             "request": request,
             "candidate": candidate,
+            "mcq_score": mcq_score,
             "total_mcqs": total_mcqs,
-            "correct_mcqs": correct_mcqs,
             "score_percentage": score_percentage,
             "llm_score": llm_score
         })
@@ -682,7 +803,7 @@ description=None
 tags=None
 psychology=None
 experience=None
-MAX_RETRIES = 15    
+MAX_RETRIES = 5    
 RETRY_DELAY = 5  # seconds
 
 
@@ -754,8 +875,10 @@ def extract_post(campaign_number):
 
 
 def extract_json_from_text(text):
+    if text.strip() == "":
+        print("Received an empty response.")
+        return None
     try:
-        
         data = json.loads(text)
         return data
     except json.JSONDecodeError as e:
@@ -772,13 +895,12 @@ def insert_candidate_questions(candidate_id, questions):
         connection = connect_to_database()
         cursor = connection.cursor()
 
-        all_questions = json.loads(questions)
-        print(type(all_questions))
+        print(type(questions))  # Should be <class 'list'>
         print("$" * 100)
-        print(all_questions)
+        print(questions)
         print("**************************************")
 
-        for question_info in all_questions:
+        for question_info in questions:
             question_text = question_info['question']
             options = question_info['options']
             correct_answer_key = question_info['answer']
@@ -805,7 +927,7 @@ def insert_candidate_questions(candidate_id, questions):
 
         # Commit changes to the database
         connection.commit()
-        print(f"{len(all_questions)} questions and their options inserted successfully for candidate ID {candidate_id}")
+        print(f"{len(questions)} questions and their options inserted successfully for candidate ID {candidate_id}")
 
     except mysql.connector.Error as error:
         print(f"Error inserting data into MySQL table: {error}")
@@ -821,7 +943,7 @@ def generate_mcq():
     global mcq_data, post, description, tags, experience, psychology, current_candidate_id
     extract_post(uploaded_campaign_number)
     print("="*50)
-    print(current_candidate_id)
+    print("Candidate ID used to generate MCQ is :",current_candidate_id)
     print("="*50)
     retries = 0
     while retries < MAX_RETRIES:
@@ -846,16 +968,23 @@ def generate_mcq():
                 )
 
             # Make a POST request to the external API
-            response = requests.post(EXTERNAL_API_URL_CHAT_BOT, data={"text": text_to_pass})
-            response.raise_for_status()  # Raise an error for bad status codes
+            
+            chat_completion = openai.chat.completions.create(
+            model="meta-llama/Meta-Llama-3.1-405B-Instruct",
+            messages=[{"role": "user", "content": text_to_pass}],
+            max_tokens=1000000,
+        )
+
+            message=chat_completion.choices[0].message.content
+            print(chat_completion.usage.prompt_tokens, chat_completion.usage.completion_tokens)
 
             # Extract JSON from the response text
             print("===================================================")
             print("Response by Chatbot :")
-            print(response.text)
+            print(message)
             print("===================================================")
 
-            mcq_data = extract_json_from_text(response.text)
+            mcq_data = extract_json_from_text(message)
             print("MCQ Extracted are :")
             print(mcq_data)
             print("----------------")
@@ -906,7 +1035,124 @@ def generate_mcq():
 
 
 
+def extract_all(candidate_id):
+    # SQL query to extract candidate details
+    query = """
+    SELECT 
+        c.id AS candidate_id,
+        c.name,
+        c.email,
+        c.phone,
+        c.address,
+        c.campaign_number,
+        c.candidate_score,
+        c.file_name,
+        
+        -- Experiences
+        e.organization_name AS experience_organization_name,
+        e.designation AS experience_designation,
+        e.start_date AS experience_start_date,
+        e.end_date AS experience_end_date,
+        e.summary AS experience_summary,
+        
+        -- Skills
+        s.skill AS skill,
+        
+        -- Education
+        edu.institute_name AS education_institute_name,
+        edu.degree AS education_degree,
+        edu.start_date AS education_start_date,
+        edu.end_date AS education_end_date,
+        edu.summary AS education_summary,
+        
+        -- Certifications
+        cert.certification AS certification,
+        
+        -- Research
+        r.research_title AS research_title
 
+    FROM 
+        candidates c
+    LEFT JOIN 
+        experiences e ON c.id = e.candidate_id
+    LEFT JOIN 
+        skills s ON c.id = s.candidate_id
+    LEFT JOIN 
+        educations edu ON c.id = edu.candidate_id
+    LEFT JOIN 
+        certifications cert ON c.id = cert.candidate_id
+    LEFT JOIN 
+        research r ON c.id = r.candidate_id
+
+    WHERE 
+        c.id = %s;
+    """
+    
+    # Connect to the database
+    connection = connect_to_database()
+    try:
+        cursor = connection.cursor(dictionary=True)
+        # Execute the query
+        cursor.execute(query, (candidate_id,))
+        # Fetch all the results
+        result = cursor.fetchall()
+        
+        # Organize the result into a single dictionary
+        data = {}
+        for row in result:
+            # Basic candidate info
+            candidate_info = {k: row[k] for k in ['candidate_id', 'name', 'email', 'phone', 'address', 'campaign_number', 'candidate_score']}
+            data['candidate_info'] = candidate_info
+
+            # Collect experiences
+            if 'experience_organization_name' in row:
+                if 'experiences' not in data:
+                    data['experiences'] = []
+                experience = {
+                    'organization_name': row['experience_organization_name'],
+                    'designation': row['experience_designation'],
+                    'start_date': row['experience_start_date'],
+                    'end_date': row['experience_end_date'],
+                    'summary': row['experience_summary']
+                }
+                data['experiences'].append(experience)
+
+            # Collect skills
+            if 'skill' in row:
+                if 'skills' not in data:
+                    data['skills'] = []
+                data['skills'].append(row['skill'])
+
+            # Collect education
+            if 'education_institute_name' in row:
+                if 'educations' not in data:
+                    data['educations'] = []
+                education = {
+                    'institute_name': row['education_institute_name'],
+                    'degree': row['education_degree'],
+                    'start_date': row['education_start_date'],
+                    'end_date': row['education_end_date'],
+                    'summary': row['education_summary']
+                }
+                data['educations'].append(education)
+
+            # Collect certifications
+            if 'certification' in row:
+                if 'certifications' not in data:
+                    data['certifications'] = []
+                data['certifications'].append(row['certification'])
+
+            # Collect research
+            if 'research_title' in row:
+                if 'research' not in data:
+                    data['research'] = []
+                data['research'].append(row['research_title'])
+
+    finally:
+        connection.close()
+    
+    return data
+    
 
 
 
@@ -939,20 +1185,29 @@ async def get_mcqs_from_db(candidate_id: int):
 @app.post("/mcqs")
 async def display_mcqs(request: Request):
     global current_candidate_id
-    candidate_id = 1  # Set the candidate_id you want to filter by
     mcqs = await get_mcqs_from_db(current_candidate_id)
     return templates.TemplateResponse("mcq.html", {"request": request, "mcqs": mcqs})
-
+llm_score=None
 @app.post("/submit_mcqs")
 async def submit_mcqs(request: Request):
-    global current_candidate_id
+
+    global current_candidate_id,llm_score
+    candidate = extract_all(current_candidate_id)
     form = await request.form()
     selected_options = {key: value for key, value in form.items() if key.startswith("option_")}
     
+    # Prepare and send payload to LLM
+    payload = f"{candidate} This is a candidate selected for post of {post} and {description}. Just rate them out of 10 and don't tell nothing else just a single line answer in format x/10"
+    response = requests.post(EXTERNAL_API_URL_CHAT_BOT, data={"text": payload})
+    response.raise_for_status()
+    llm_score = response.text.strip()
+
     connection = connect_to_database()
     cursor = connection.cursor()
-    
-    candidateid = 27  # Use the correct candidate ID
+
+    total_mcq = len(selected_options)  # Total number of MCQs answered
+    correct_mcq_count = 0  # Initialize correct MCQ count
+
     for key, value in selected_options.items():
         question_id = key.split("_")[1]
         selected_option_id = value
@@ -966,15 +1221,24 @@ async def submit_mcqs(request: Request):
         cursor.execute(correct_query, (selected_option_id,))
         is_correct = cursor.fetchone()[0]  # Fetch the correctness status
         
-        print(f"Updating selected_option_id to {selected_option_id} for question_id {question_id} and candidate_id {current_candidate_id}")
+        if is_correct:
+            correct_mcq_count += 1  # Increment correct MCQ count
         
-        insert_query = """
+        # Update candidate_questions with the selected option and correctness
+        update_query = """
         UPDATE candidate_questions
         SET selected_option_id = %s, correct_or_not = %s
         WHERE candidate_id = %s AND question_id = %s;
         """
-        cursor.execute(insert_query, (selected_option_id, is_correct, current_candidate_id, question_id))
-        print("Update successful. Rows affected:", cursor.rowcount)
+        cursor.execute(update_query, (selected_option_id, is_correct, current_candidate_id, question_id))
+
+    # Insert or update user_scores with the calculated score
+    score_query = """
+    INSERT INTO user_scores (candidate_id, mcq_score, total_mcq, llm_score)
+    VALUES (%s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE mcq_score = VALUES(mcq_score), total_mcq = VALUES(total_mcq), llm_score = VALUES(llm_score);
+    """
+    cursor.execute(score_query, (current_candidate_id, correct_mcq_count, total_mcq, llm_score))
     
     connection.commit()
     cursor.close()
@@ -983,17 +1247,15 @@ async def submit_mcqs(request: Request):
     return HTMLResponse(content="""
             <html>
             <head>
-                <title>Resume Uploaded</title>
+                <title>Submit MCQs</title>
             </head>
             <body style="background-color: black; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px;">
                 <h2>Success!</h2>
-                <p>Resume Uploaded Successfully</p>
-                <p><a href="/">Back to Main Menu </a></p>
+                <p>MCQs submitted successfully. Your score has been recorded.</p>
+                <p><a href="/">Back to Main Menu</a></p>
             </body>
             </html>
         """)
-
-
 
 
 
@@ -1102,7 +1364,7 @@ def send_text_to_api():
 
 
 
-
+title=None
 
 
 
@@ -1207,24 +1469,56 @@ async def view_resume(file_name: str):
     else:
         raise HTTPException(status_code=404, detail="Resume not found")
 
+
+@app.get("/fetch-user-campaign-numbers", response_class=JSONResponse)
+async def fetch_user_campaign_numbers(request: Request):
+    try:
+        db_connection = connect_to_database()
+        cursor = db_connection.cursor(dictionary=True)
+        campaign_numbers = get_logged_in_user_campaign_numbers(request)
+        
+        db_connection.close()
+        
+        return JSONResponse(content={"campaign_numbers": campaign_numbers})
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"MySQL Error: {str(e)}")
+
+
+
 @app.get("/list-candidates", response_class=HTMLResponse)
 async def list_candidates(request: Request, campaign_number: int = None, sort: str = None):
     try:
         db_connection = connect_to_database()
         cursor = db_connection.cursor(dictionary=True)
+        campaign_numbers = get_logged_in_user_campaign_numbers(request)
         
-        # Get candidates based on campaign number and sorting order
+        if not campaign_numbers:
+            db_connection.close()
+            return templates.TemplateResponse("list_candidates.html", {
+                "request": request,
+                "candidates": []
+            })
+
+        # Build the query based on the campaign numbers and sorting order
         if campaign_number:
-            cursor.execute("SELECT * FROM candidates WHERE campaign_number = %s", (campaign_number,))
+            if campaign_number in campaign_numbers:
+                cursor.execute("SELECT * FROM candidates WHERE campaign_number = %s", (campaign_number,))
+            else:
+                db_connection.close()
+                return templates.TemplateResponse("list_candidates.html", {
+                    "request": request,
+                    "candidates": []
+                })
         else:
-            cursor.execute("SELECT * FROM candidates")
-        
+            cursor.execute("SELECT * FROM candidates WHERE campaign_number IN (%s)" % ','.join(['%s'] * len(campaign_numbers)), campaign_numbers)
+
         candidates = cursor.fetchall()
         
+        # Sort candidates if a sort order is specified
         if sort == "asc":
-            candidates = sorted(candidates, key=lambda x: x["campaign_number"])
+            candidates = sorted(candidates, key=lambda x: x["candidate_score"])
         elif sort == "desc":
-            candidates = sorted(candidates, key=lambda x: x["campaign_number"], reverse=True)
+            candidates = sorted(candidates, key=lambda x: x["candidate_score"], reverse=True)
         
         db_connection.close()
         
@@ -1243,17 +1537,117 @@ async def list_candidates(request: Request, campaign_number: int = None, sort: s
 async def read_job_description(request: Request):
     return templates.TemplateResponse("jobdescription.html", {"request": request})
 
+
+
+
+
+def job_Des(position):
+    # Define the prompt with the provided position
+    prompt = f"""
+    Only Write a job description for the position of {position} and only return it in JSON and in format
+    {{
+      "Description": "Your description here"
+    }}
+    """
+    
+    # Define the payload with the key 'text' and the prompt
+    payload = {
+        'text': prompt
+    }
+    
+    # Make a POST request to the external API
+    try:
+        response = requests.post(EXTERNAL_API_URL_CHAT_BOT, data=payload)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+    except requests.RequestException as e:
+        print(f"Error during API request: {e}")
+        return None
+    
+    # Print the raw response for debugging
+    print("-" * 50)
+    print(response.json())
+    print("-" * 50)
+    
+    return response.json()
+
+
+
+
 def extract_keywords(job_title):
     # Convert job title to lowercase and split into words
     words = re.findall(r'\b\w+\b', job_title.lower())
     
     # Define a list of common roles or keywords you are interested in
-    keywords = ["intern", "senior", "junior", "manager", "director", "assistant", "analyst", "developer","mto","associate"]
+    keywords = ["intern", "senior", "junior", "manager", "director", "assistant","health worker","hospital nurse", "analyst", "developer","mto","associate","data quality officer","ml intern"]
     
     # Extract keywords that are found in the job title
     extracted_keywords = [word for word in words if word in keywords]
     
-    return extracted_keywords
+    return job_title
+
+
+def extract_json_from_string(text):
+    """
+    Extracts JSON data from a given string. The string may contain additional text or formatting.
+    
+    Args:
+        text (str): The string containing JSON data.
+    
+    Returns:
+        dict or None: Parsed JSON data if extraction is successful, otherwise None.
+    """
+    text = text.strip()
+    
+    try:
+        # Attempt to parse the entire text as JSON
+        data = json.loads(text)
+        if isinstance(data, dict) and "Description" in data:
+            return data
+        else:
+            print("JSON does not contain the 'Description' key.")
+            return None
+    except json.JSONDecodeError:
+        # Extract JSON manually if direct parsing fails
+        try:
+            # Find the start and end of the JSON string
+            start_index = text.find('{')
+            end_index = text.rfind('}') + 1
+            
+            if start_index != -1 and end_index != -1:
+                json_str = text[start_index:end_index]
+                data = json.loads(json_str)
+                
+                if isinstance(data, dict) and "Description" in data:
+                    return data
+                else:
+                    print(f"Extracted JSON does not contain the 'Description' key: {data}")
+                    return None
+            else:
+                print("No valid JSON found in the string.")
+                return None
+        except json.JSONDecodeError:
+            print(f"Failed to extract or decode JSON. Raw text: {text}")
+            return None
+
+@app.get("/check-campaign-number")
+async def check_campaign_number(campaignNumber: str):
+    try:
+        db_connection = connect_to_database()
+        cursor = db_connection.cursor()
+        
+        # Check if campaign number already exists
+        check_query = "SELECT COUNT(*) FROM job_descriptions WHERE campaign_number = %s"
+        cursor.execute(check_query, (campaignNumber,))
+        count = cursor.fetchone()[0]
+
+        cursor.close()
+        db_connection.close()
+
+        return {"exists": count > 0}
+    except Exception as e:
+        print(f"Error: {e}")
+        return {"exists": False}
+
 
 @app.get("/get-job-description")
 async def get_job_description(jobTitle: str):
@@ -1262,25 +1656,19 @@ async def get_job_description(jobTitle: str):
         keywords = extract_keywords(jobTitle)
         if not keywords:
             return JSONResponse(content={"description": ""}, status_code=404)
-
-        # Connect to the database
-        db_connection = connect_to_database()
-        cursor = db_connection.cursor(dictionary=True)
-
-        # Build the query based on extracted keywords
-        query = " OR ".join(f"title LIKE %s" for _ in keywords)
-        query = f"SELECT description FROM position_descriptions WHERE {query}"
-        
-        # Execute the query
-        cursor.execute(query, tuple(f"%{keyword}%" for keyword in keywords))
-        result = cursor.fetchone()
-
-        # Close the connection
-        cursor.close()
-        db_connection.close()
-
+        print(jobTitle)
+        job_description=job_Des(jobTitle)
+        print(jobTitle)
+        print("-"*50)
+        print(job_description)
+        print("-"*50)
+        job_description=extract_json_from_string(job_description)
+        result=job_description
+        print("="*50)
+        print(result)
+        print("="*50)
         if result:
-            return JSONResponse(content={"description": result['description']})
+            return JSONResponse(content={"description": result['Description']})
         else:
             return JSONResponse(content={"description": ""}, status_code=404)
 
@@ -1300,27 +1688,60 @@ async def insert_job_description(
     status: str = Form(...),
     expiration_date: str = Form(...)
 ):
+    global user, passcode
     try:
-        # Connect to the database
         db_connection = connect_to_database()
+        cursor = db_connection.cursor()
 
-        # Insert the job description into the database
+        # Check if campaign number already exists
+        check_query = "SELECT COUNT(*) FROM job_descriptions WHERE campaign_number = %s"
+        cursor.execute(check_query, (campaignNumber,))
+        count = cursor.fetchone()[0]
+
+        if count > 0:
+            db_connection.close()
+            raise HTTPException(status_code=400, detail="Campaign number already exists. Please enter a different campaign number.")
+
+        # Create table if it does not exist
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS login (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(255),
+            password VARCHAR(255),
+            campaign_number INT
+        )
+        """
+        cursor.execute(create_table_query)
+
+        # Insert the job description into the job_descriptions table
         insert_query = """
         INSERT INTO job_descriptions (job_title, job_description, campaign_number, tags, experience, psychology)
         VALUES (%s, %s, %s, %s, %s, %s)
         """
         values = (jobTitle, jobDescription, campaignNumber, tags, experience, psychology)
+        cursor.execute(insert_query, values)
+
+        # Insert campaign information into campaignnumber table
         insert_query_campaign = """
-        INSERT INTO campaignnumber (campaign_number, status, expiration_date) VALUES (%s, %s, %s)
+        INSERT INTO campaignnumber (campaign_number, status, expiration_date)
+        VALUES (%s, %s, %s)
         """
         values_campaign = (campaignNumber, status, expiration_date)
-        with db_connection.cursor() as cursor:
-            cursor.execute(insert_query, values)
-            cursor.execute(insert_query_campaign, values_campaign)
-            db_connection.commit()
+        cursor.execute(insert_query_campaign, values_campaign)
 
-        # Close the connection
+        # Insert the campaign number into the login table
+        insert_login_query = """
+        INSERT INTO login (username, password, campaign_number)
+        VALUES (%s, %s, %s)
+        """
+        # You might need to adjust the username and password values if they are not provided in the form
+        cursor.execute(insert_login_query, (user, passcode, campaignNumber))
+
+        db_connection.commit()
+
+        cursor.close()
         db_connection.close()
+
         return HTMLResponse(content="""
             <html>
             <head>
@@ -1349,11 +1770,10 @@ async def insert_job_description(
         """, status_code=500)
 
 
-
-
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 
 
@@ -1436,3 +1856,5 @@ async def update_table_data(request: Request):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    
